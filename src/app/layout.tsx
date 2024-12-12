@@ -3,6 +3,8 @@ import localFont from "next/font/local";
 
 import "./globals.css";
 import 'antd/dist/reset.css'; 
+import { AuthProvider } from '@/contexts/AuthContext';
+import AuthGuard from '@/components/AuthGuard';
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -15,15 +17,6 @@ const geistMono = localFont({
   weight: "100 900",
 });
 
-export const metadata: Metadata = {
-  title: "YES Securities",
-  description: "YES Securities Trading Platform",
-  icons: {
-    icon: "/icon.jpg",        // 32x32 px
-    shortcut: "/icon.jpg"
-  }
-};
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -34,7 +27,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <AuthProvider>
+          <AuthGuard>{children}</AuthGuard>
+        </AuthProvider>
       </body>
     </html>
   );

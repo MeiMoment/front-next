@@ -1,4 +1,5 @@
 import axios from "axios";
+import { JWT } from "../constants";
 import { message } from "antd";
 
 const codeMessage: Record<number, string> = {
@@ -21,9 +22,26 @@ const codeMessage: Record<number, string> = {
 };
 
 export const ajaxWithLogin = axios.create({
-  baseURL: "/api",
-  timeout: 10000,
+  baseURL: "/api/api/v1",
+  timeout: 1000 * 10,
 });
+
+// 请求拦截器
+ajaxWithLogin.interceptors.request.use(
+  (config) => {
+    // 获取 JWT Token
+    const token = localStorage.getItem(JWT); // 假设你将 JWT 存储在 localStorage 中
+    if (token) {
+      // 在头部添加 Authorization 字段
+      config.headers["Authorization"] = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    // 请求错误处理
+    return Promise.reject(error);
+  }
+);
 
 // 响应拦截器
 ajaxWithLogin.interceptors.response.use(
@@ -31,10 +49,23 @@ ajaxWithLogin.interceptors.response.use(
     return response;
   },
   (error) => {
-    if (error.response && !String(error.response.status).startsWith("2")) {
-      message.error(codeMessage[error.response.status]);
+    if (error.response) {
+      const { status, data } = error.response;
+      
+      switch (status) {
+        case 401:
+          // Token 失效或未授权
+          window.dispatchEvent(new CustomEvent("not_login"));
+          message.error('登录已过期，请重新登录');
+          break;
+        case 403:
+          message.error('没有权限访问此资源');
+          break;
+        default:
+          message.error(data?.message || codeMessage[status] || '请求失败');
+      }
     } else {
-      return Promise.resolve(error.response);
+      message.error('网络错误，请检查网络连接');
     }
     return Promise.reject(error);
   }
